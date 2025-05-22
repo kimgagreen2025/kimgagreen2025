@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+	<head>
+		<meta charset="UTF-8" />
+		<title>회원가입 & 로그인</title>
+		<style>
+			body {
+				margin: 0;
+				padding: 0;
+				background: #3e2723;
+				font-family: 'Helvetica Neue', sans-serif;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				height: 100vh;
+				color: #f5f5f5;
+			}
+
+			h2 {
+				margin-bottom: 10px;
+				color: #ffccbc;
+			}
+
+			form {
+				background-color: #4e342e;
+				border-radius: 20px;
+				padding: 20px 30px;
+				margin-bottom: 20px;
+				box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				width: 300px;
+			}
+
+			input,
+			button {
+				margin: 8px 0;
+				padding: 10px;
+				border: 1px solid #795548;
+				border-radius: 12px;
+				width: 100%;
+				box-sizing: border-box;
+				font-size: 14px;
+				background-color: #ffffffdd;
+				color: #3e2723;
+			}
+
+			button {
+				background-color: #8d6e63;
+				color: white;
+				font-weight: bold;
+				cursor: pointer;
+				transition: background-color 0.3s ease;
+				border: none;
+			}
+
+			button:hover {
+				background-color: #a1887f;
+			}
+
+			#welcome {
+				margin-top: 20px;
+				font-size: 20px;
+				font-weight: bold;
+				color: #ffccbc;
+				display: none;
+			}
+
+			.todo-section {
+				display: none;
+				margin-top: 30px;
+				width: 300px;
+			}
+
+			#todo {
+				padding: 10px;
+				font-size: 16px;
+				border-radius: 20px;
+				border: 1px solid #007bff;
+				width: 70%;
+			}
+
+			#add-button {
+				padding: 10px 15px;
+				font-size: 15px;
+				background-color: #007bff;
+				color: white;
+				border: none;
+				border-radius: 20px;
+				cursor: pointer;
+			}
+
+			#add-button:hover {
+				background-color: #0056b3;
+			}
+
+			#todo-list > div {
+				margin-top: 10px;
+				background-color: #fff;
+				color: #3e2723;
+				padding: 8px;
+				border-radius: 8px;
+			}
+		</style>
+	</head>
+	<body>
+		<h2>회원가입</h2>
+		<form id="signup-form">
+			<input type="text" id="signup-id" placeholder="아이디" required />
+			<input type="password" id="signup-pw" placeholder="비밀번호" required />
+			<input type="text" id="signup-name" placeholder="이름" />
+			<input type="number" id="signup-age" placeholder="나이" />
+			<button type="submit">가입하기</button>
+		</form>
+
+		<h2>로그인</h2>
+		<form id="login-form">
+			<input type="text" id="login-id" placeholder="아이디" required />
+			<input type="password" id="login-pw" placeholder="비밀번호" required />
+			<button type="submit">로그인</button>
+		</form>
+
+		<div id="welcome"></div>
+
+		<div class="todo-section" id="todo-section">
+			<h2>✅ 할 일 목록</h2>
+			<div style="display: flex; gap: 10px">
+				<input id="todo" placeholder="할 일 입력" />
+				<button id="add-button">추가</button>
+			</div>
+			<div id="todo-list"></div>
+		</div>
+
+		<script>
+			let currentUser = null;
+
+			document
+				.getElementById('signup-form')
+				.addEventListener('submit', function (e) {
+					e.preventDefault();
+					const id = document.getElementById('signup-id').value;
+					const pw = document.getElementById('signup-pw').value;
+					const name = document.getElementById('signup-name').value;
+					const age = document.getElementById('signup-age').value;
+					const user = { id, pw, name, age };
+					localStorage.setItem(id, JSON.stringify(user));
+					alert('회원가입 완료');
+					this.reset();
+				});
+
+			document
+				.getElementById('login-form')
+				.addEventListener('submit', function (e) {
+					e.preventDefault();
+					const id = document.getElementById('login-id').value;
+					const pw = document.getElementById('login-pw').value;
+					const saved = localStorage.getItem(id);
+
+					if (!saved) {
+						alert('존재하지 않는 아이디입니다.');
+						return;
+					}
+
+					const user = JSON.parse(saved);
+					if (user.pw !== pw) {
+						alert('비밀번호가 일치하지 않습니다.');
+						return;
+					}
+
+					document.getElementById('signup-form').style.display = 'none';
+					document.getElementById('login-form').style.display = 'none';
+
+					document.getElementById(
+						'welcome'
+					).innerText = `${user.id}님 환영합니다.`;
+					document.getElementById('welcome').style.display = 'block';
+
+					currentUser = user.id;
+					document.getElementById('todo-section').style.display = 'block';
+					loadTodos(currentUser);
+				});
+
+			function loadTodos(userId) {
+				const saved = localStorage.getItem('todos_' + userId);
+				const list = document.getElementById('todo-list');
+				list.innerHTML = '';
+				if (saved) {
+					JSON.parse(saved).forEach((todo) => {
+						const item = document.createElement('div');
+						item.innerText = todo;
+						list.appendChild(item);
+					});
+				}
+			}
+
+			function saveTodo(userId, text) {
+				let todos = [];
+				const existing = localStorage.getItem('todos_' + userId);
+				if (existing) {
+					todos = JSON.parse(existing);
+				}
+				todos.push(text);
+				localStorage.setItem('todos_' + userId, JSON.stringify(todos));
+			}
+
+			document.getElementById('add-button').addEventListener('click', () => {
+				const input = document.getElementById('todo');
+				const text = input.value.trim();
+				if (!text) return;
+				if (!currentUser) {
+					alert('먼저 로그인하세옹옹.');
+					return;
+				}
+				saveTodo(currentUser, text);
+				loadTodos(currentUser);
+				input.value = '';
+			});
+		</script>
+	</body>
+</html>
